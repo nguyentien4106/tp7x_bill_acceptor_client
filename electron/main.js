@@ -1,17 +1,19 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const TpSeries = require('tp-rs232')
 const BillAcceptor = require('../helpers/BillAcceptor')
+
 let mainWindow;
 let money = 0;
 
 function createWindow() {
   // Create the browser window.
-  console.log(path.join(__dirname, 'preload.js'))
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false,
       preload: path.join(__dirname, 'preload.js')
     }
   })
@@ -34,15 +36,14 @@ function readBill(result) {
     6: 500000
   }
   money += moneyValueChannel[result.channel]
-  mainWindow.webContents.send('money', money)
-  console.log('money', money)
 }
 
 app.whenReady().then(() => {
   createWindow()
   let bill = new BillAcceptor.BillAcceptor(readBill)
+  ipcMain.handle("getMoney", () => money)
+
   app.on('activate', () => {
-    // On macOS, re-create a window when the dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
     }
